@@ -18,23 +18,20 @@ async function assertTrainer(supabase: any, userId: string) {
   if (!data) throw new Error("Forbidden: solo administradores");
 }
 
-async function assertTrainerOfClient(
-  supabase: any,
-  trainerId: string,
-  clientId: string
-) {
-  const { data, error } = await supabase.rpc("is_trainer_of", {
-    _trainer: trainerId,
-    _client: clientId,
-  });
-
-  if (error) {
-    console.error("Error checking trainer-client relationship:", error);
-    throw new Error(error.message);
+// Prevent trainer-vs-trainer takeover: target must be a client and not a trainer.
+async function assertTargetIsClient(clientId: string) {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data, error } = await supabaseAdmin
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", clientId);
+  if (error) throw new Error(error.message);
+  const roles = (data ?? []).map((r: any) => r.role);
+  if (roles.includes("trainer")) {
+    throw new Error("Forbidden: no se pueden modificar cuentas de administrador");
   }
-
-  if (!data) {
-    throw new Error("Forbidden: No eres entrenador de este cliente");
+  if (!roles.includes("client")) {
+    throw new Error("Forbidden: el usuario objetivo no es un cliente");
   }
 }
 
@@ -62,7 +59,6 @@ export const adminCreateClient = createServerFn({ method: "POST" })
     });
     if (error) throw new Error(error.message);
     const uid = created.user!.id;
-    // Ensure profile fields (trigger creates row; we upsert to be safe)
     await supabaseAdmin.from("profiles").upsert({
       id: uid,
       full_name: data.fullName,
@@ -96,7 +92,7 @@ export const adminUpdateClient = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await assertTrainer(context.supabase, context.userId);
-    await assertTrainerOfClient(context.supabase, context.userId, data.clientId);
+    await assertTargetIsClient(data.clientId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const patch: any = {};
     if (data.fullName !== undefined) patch.full_name = data.fullName;
@@ -125,7 +121,7 @@ export const adminResetClientPassword = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await assertTrainer(context.supabase, context.userId);
-    await assertTrainerOfClient(context.supabase, context.userId, data.clientId);
+    await assertTargetIsClient(data.clientId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const password = data.password.trim();
     const { error } = await supabaseAdmin.auth.admin.updateUserById(data.clientId, { password });
@@ -140,7 +136,7 @@ export const adminSetClientStatus = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await assertTrainer(context.supabase, context.userId);
-    await assertTrainerOfClient(context.supabase, context.userId, data.clientId);
+    await assertTargetIsClient(data.clientId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const disabled = data.status === "disabled";
     const { error: e1 } = await supabaseAdmin.from("profiles").update({
@@ -160,7 +156,7 @@ export const adminGetClientAuthInfo = createServerFn({ method: "POST" })
   .inputValidator((d: { clientId: string }) => z.object({ clientId: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     await assertTrainer(context.supabase, context.userId);
-    await assertTrainerOfClient(context.supabase, context.userId, data.clientId);
+    await assertTargetIsClient(data.clientId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: u, error } = await supabaseAdmin.auth.admin.getUserById(data.clientId);
     if (error) throw new Error(error.message);

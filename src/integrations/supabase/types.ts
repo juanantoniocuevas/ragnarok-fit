@@ -254,6 +254,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_manageable_client: { Args: { _target: string }; Returns: boolean }
       is_trainer_of: {
         Args: { _client: string; _trainer: string }
         Returns: boolean
