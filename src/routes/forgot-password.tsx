@@ -54,7 +54,12 @@ function ForgotPasswordPage() {
           ) : (
             <>
               <h1 className="font-display text-2xl font-bold">Recuperar contraseña</h1>
-              <p className="mt-1 text-sm text-muted-foreground">Te enviaremos un enlace para crear una nueva contraseña.</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Te enviaremos un enlace para crear una nueva contraseña.
+              </p>
+              <p className="mt-2 text-xs text-muted-foreground">
+                Esta opción solo funciona para cuentas con correo real. Si tu acceso fue creado por tu entrenador con un usuario interno, debes pedirle que cambie tu contraseña desde el panel de administración.
+              </p>
               <form onSubmit={onSubmit} className="mt-6 space-y-4">
                 <div>
                   <label className="mb-1 block text-sm font-medium">Correo</label>

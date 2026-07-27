@@ -16,6 +16,14 @@ import {
 
 export const Route = createFileRoute("/admin/clients/$clientId")({ component: ClientDetail });
 
+const CLIENT_LOGIN_DOMAIN = "@clientes.ragnarokfit.local";
+
+function displayLoginIdentifier(email: string | null | undefined): string {
+  const raw = email ?? "";
+  if (raw.endsWith(CLIENT_LOGIN_DOMAIN)) return raw.slice(0, -CLIENT_LOGIN_DOMAIN.length);
+  return raw;
+}
+
 function ClientDetail() {
   const { clientId } = Route.useParams();
   const { user } = useAuth();
@@ -29,6 +37,7 @@ function ClientDetail() {
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
+  const [showResetPassword, setShowResetPassword] = useState(false);
 
   const updateFn = useServerFn(adminUpdateClient);
   const resetPwFn = useServerFn(adminResetClientPassword);
@@ -96,14 +105,6 @@ function ClientDetail() {
     load();
   };
 
-  const resetPassword = async () => {
-    if (!confirm("¿Generar una nueva contraseña temporal para este cliente?")) return;
-    try {
-      const res = await resetPwFn({ data: { clientId } });
-      toast.success(`Nueva contraseña temporal: ${res.tempPassword}`, { duration: 25000 });
-    } catch (e: any) { toast.error(e.message); }
-  };
-
   const toggleStatus = async () => {
     if (!profile) return;
     const next = profile.status === "disabled" ? "active" : "disabled";
@@ -136,7 +137,7 @@ function ClientDetail() {
           )}
           <div className="flex-1 space-y-1">
             <h1 className="font-display text-3xl font-bold">{profile.full_name}</h1>
-            <p className="text-muted-foreground">{profile.email}</p>
+            <p className="text-muted-foreground">Usuario: {displayLoginIdentifier(profile.email)}</p>
             {profile.phone && <p className="text-sm text-muted-foreground">{profile.phone}</p>}
             <div className="mt-2">
               {profile.status === "disabled"
@@ -146,7 +147,7 @@ function ClientDetail() {
           </div>
           <div className="flex flex-wrap gap-2">
             <button onClick={() => setEditing(true)} className="btn-secondary text-sm">Editar datos</button>
-            <button onClick={resetPassword} className="btn-secondary text-sm">Restablecer contraseña</button>
+            <button onClick={() => setShowResetPassword(true)} className="btn-secondary text-sm">Restablecer contraseña</button>
             <button onClick={toggleStatus} className="btn-secondary text-sm">
               {profile.status === "disabled" ? "Reactivar" : "Deshabilitar"}
             </button>
@@ -175,6 +176,19 @@ function ClientDetail() {
               toast.success("Datos actualizados");
               setEditing(false);
               load();
+            } catch (e: any) { toast.error(e.message); }
+          }}
+        />
+      )}
+
+      {showResetPassword && (
+        <ResetPasswordModal
+          onClose={() => setShowResetPassword(false)}
+          onSave={async (password) => {
+            try {
+              const res = await resetPwFn({ data: { clientId, password } });
+              toast.success(res.message);
+              setShowResetPassword(false);
             } catch (e: any) { toast.error(e.message); }
           }}
         />
@@ -282,16 +296,16 @@ function Info({ label, value }: { label: string; value: any }) {
   return <div><dt className="text-xs uppercase tracking-wide text-muted-foreground">{label}</dt><dd className="mt-1 font-medium">{value}</dd></div>;
 }
 
-function EditProfileModal({ profile, onClose, onSave }: { profile: any; onClose: () => void; onSave: (patch: { fullName?: string; email?: string; phone?: string | null }) => Promise<void> }) {
+function EditProfileModal({ profile, onClose, onSave }: { profile: any; onClose: () => void; onSave: (patch: { fullName?: string; username?: string; phone?: string | null }) => Promise<void> }) {
   const [fullName, setFullName] = useState(profile.full_name ?? "");
-  const [email, setEmail] = useState(profile.email ?? "");
+  const [username, setUsername] = useState(displayLoginIdentifier(profile.email));
   const [phone, setPhone] = useState(profile.phone ?? "");
   const [saving, setSaving] = useState(false);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
-    await onSave({ fullName, email, phone: phone || null });
+    await onSave({ fullName, username, phone: phone || null });
     setSaving(false);
   };
 
@@ -303,14 +317,58 @@ function EditProfileModal({ profile, onClose, onSave }: { profile: any; onClose:
           <label className="block"><span className="mb-1 block text-sm font-medium">Nombre</span>
             <input required value={fullName} onChange={(e) => setFullName(e.target.value)} className="input" />
           </label>
-          <label className="block"><span className="mb-1 block text-sm font-medium">Correo</span>
-            <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="input" />
+          <label className="block"><span className="mb-1 block text-sm font-medium">Usuario</span>
+            <input required value={username} onChange={(e) => setUsername(e.target.value)} className="input" />
           </label>
           <label className="block"><span className="mb-1 block text-sm font-medium">Teléfono</span>
             <input value={phone} onChange={(e) => setPhone(e.target.value)} className="input" />
           </label>
           <div className="flex gap-2 pt-2">
             <button disabled={saving} className="btn-primary flex-1">{saving ? "Guardando..." : "Guardar"}</button>
+            <button type="button" onClick={onClose} className="btn-secondary">Cancelar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function ResetPasswordModal({ onClose, onSave }: { onClose: () => void; onSave: (password: string) => Promise<void> }) {
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (password.length < 8) {
+      toast.error("La contraseña debe tener al menos 8 caracteres");
+      return;
+    }
+    if (password !== confirmPassword) {
+      toast.error("Las contraseñas no coinciden");
+      return;
+    }
+    setSaving(true);
+    await onSave(password);
+    setSaving(false);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
+      <div className="surface-card w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
+        <h2 className="font-display text-2xl font-bold">Restablecer contraseña</h2>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Define una nueva contraseña manualmente para esta cuenta administrada.
+        </p>
+        <form onSubmit={submit} className="mt-4 space-y-3">
+          <label className="block"><span className="mb-1 block text-sm font-medium">Nueva contraseña</span>
+            <input type="password" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} className="input" />
+          </label>
+          <label className="block"><span className="mb-1 block text-sm font-medium">Confirmar contraseña</span>
+            <input type="password" required minLength={8} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="input" />
+          </label>
+          <div className="flex gap-2 pt-2">
+            <button disabled={saving} className="btn-primary flex-1">{saving ? "Guardando..." : "Actualizar contraseña"}</button>
             <button type="button" onClick={onClose} className="btn-secondary">Cancelar</button>
           </div>
         </form>

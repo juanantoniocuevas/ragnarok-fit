@@ -1,7 +1,16 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { generateTempPassword } from "@/lib/password-generator";
+
+const CLIENT_LOGIN_DOMAIN = "clientes.ragnarokfit.local";
+
+function normalizeUsername(value: string): string {
+  return value.trim().toLowerCase().replace(/\s+/g, "").replace(/[^a-z0-9._-]/g, "");
+}
+
+function buildClientLoginEmail(username: string): string {
+  return `${normalizeUsername(username)}@${CLIENT_LOGIN_DOMAIN}`;
+}
 
 async function assertTrainer(supabase: any, userId: string) {
   const { data, error } = await supabase.rpc("has_role", { _user_id: userId, _role: "trainer" });
@@ -31,23 +40,25 @@ async function assertTrainerOfClient(
 
 export const adminCreateClient = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { email: string; fullName: string; phone?: string; password?: string }) =>
+  .inputValidator((d: { username: string; fullName: string; phone?: string; password: string }) =>
     z.object({
-      email: z.string().email().max(255),
+      username: z.string().trim().min(3).max(40).regex(/^[a-zA-Z0-9._-]+$/, "Usuario inválido"),
       fullName: z.string().trim().min(2).max(120),
       phone: z.string().trim().max(30).optional(),
-      password: z.string().min(8).max(72).optional(),
+      password: z.string().min(8).max(72),
     }).parse(d),
   )
   .handler(async ({ data, context }) => {
     await assertTrainer(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const password = data.password?.trim() || generateTempPassword();
+    const username = normalizeUsername(data.username);
+    const loginEmail = buildClientLoginEmail(username);
+    const password = data.password.trim();
     const { data: created, error } = await supabaseAdmin.auth.admin.createUser({
-      email: data.email,
+      email: loginEmail,
       password,
       email_confirm: true,
-      user_metadata: { full_name: data.fullName, phone: data.phone },
+      user_metadata: { full_name: data.fullName, phone: data.phone, username },
     });
     if (error) throw new Error(error.message);
     const uid = created.user!.id;
@@ -55,20 +66,31 @@ export const adminCreateClient = createServerFn({ method: "POST" })
     await supabaseAdmin.from("profiles").upsert({
       id: uid,
       full_name: data.fullName,
-      email: data.email,
+      email: loginEmail,
       phone: data.phone ?? null,
     }, { onConflict: "id" });
     await supabaseAdmin.from("user_roles").upsert({ user_id: uid, role: "client" }, { onConflict: "user_id,role" });
-    return { id: uid, message: "Cliente creado exitosamente. Contraseña temporal enviada al email." };
+    await supabaseAdmin
+      .from("trainer_clients")
+      .upsert(
+        {
+          trainer_id: context.userId,
+          client_id: uid,
+          accepted_at: new Date().toISOString(),
+          requested_by: context.userId,
+        },
+        { onConflict: "trainer_id,client_id" },
+      );
+    return { id: uid, message: `Cliente creado exitosamente. Usuario: ${username}` };
   });
 
 export const adminUpdateClient = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { clientId: string; fullName?: string; email?: string; phone?: string | null }) =>
+  .inputValidator((d: { clientId: string; fullName?: string; username?: string; phone?: string | null }) =>
     z.object({
       clientId: z.string().uuid(),
       fullName: z.string().trim().min(2).max(120).optional(),
-      email: z.string().email().max(255).optional(),
+      username: z.string().trim().min(3).max(40).regex(/^[a-zA-Z0-9._-]+$/, "Usuario inválido").optional(),
       phone: z.string().trim().max(30).nullable().optional(),
     }).parse(d),
   )
@@ -78,14 +100,19 @@ export const adminUpdateClient = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const patch: any = {};
     if (data.fullName !== undefined) patch.full_name = data.fullName;
-    if (data.email !== undefined) patch.email = data.email;
     if (data.phone !== undefined) patch.phone = data.phone;
+    if (data.username !== undefined) patch.email = buildClientLoginEmail(data.username);
     if (Object.keys(patch).length > 0) {
       const { error } = await supabaseAdmin.from("profiles").update(patch).eq("id", data.clientId);
       if (error) throw new Error(error.message);
     }
-    if (data.email) {
-      const { error } = await supabaseAdmin.auth.admin.updateUserById(data.clientId, { email: data.email });
+    if (data.username) {
+      const username = normalizeUsername(data.username);
+      const loginEmail = buildClientLoginEmail(username);
+      const { error } = await supabaseAdmin.auth.admin.updateUserById(data.clientId, {
+        email: loginEmail,
+        user_metadata: { username },
+      });
       if (error) throw new Error(error.message);
     }
     return { ok: true };
@@ -93,17 +120,17 @@ export const adminUpdateClient = createServerFn({ method: "POST" })
 
 export const adminResetClientPassword = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { clientId: string; password?: string }) =>
-    z.object({ clientId: z.string().uuid(), password: z.string().min(8).max(72).optional() }).parse(d),
+  .inputValidator((d: { clientId: string; password: string }) =>
+    z.object({ clientId: z.string().uuid(), password: z.string().min(8).max(72) }).parse(d),
   )
   .handler(async ({ data, context }) => {
     await assertTrainer(context.supabase, context.userId);
     await assertTrainerOfClient(context.supabase, context.userId, data.clientId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const password = data.password?.trim() || generateTempPassword();
+    const password = data.password.trim();
     const { error } = await supabaseAdmin.auth.admin.updateUserById(data.clientId, { password });
     if (error) throw new Error(error.message);
-    return { ok: true, message: "Contraseña reseteada. Nueva contraseña temporal enviada al email del cliente." };
+    return { ok: true, message: "Contraseña actualizada correctamente." };
   });
 
 export const adminSetClientStatus = createServerFn({ method: "POST" })

@@ -2,12 +2,24 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/lib/auth-context";
 import { adminCreateClient, adminSetClientStatus } from "@/lib/admin-clients.functions";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin/clients")({ component: Clients });
 
+const CLIENT_LOGIN_DOMAIN = "@clientes.ragnarokfit.local";
+
+function displayLoginIdentifier(profile: any): string {
+  const raw = profile?.email ?? "";
+  if (typeof raw === "string" && raw.endsWith(CLIENT_LOGIN_DOMAIN)) {
+    return raw.slice(0, -CLIENT_LOGIN_DOMAIN.length);
+  }
+  return raw;
+}
+
 function Clients() {
+  const { user } = useAuth();
   const [rows, setRows] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [showCreate, setShowCreate] = useState(false);
@@ -15,22 +27,29 @@ function Clients() {
   const setStatusFn = useServerFn(adminSetClientStatus);
 
   const load = async () => {
-    const { data: roleRows } = await supabase.from("user_roles").select("user_id").eq("role", "client");
-    const ids = (roleRows ?? []).map((r: any) => r.user_id);
+    if (!user?.id) return;
+    const { data: assigned } = await supabase
+      .from("trainer_clients")
+      .select("client_id")
+      .eq("trainer_id", user.id)
+      .not("accepted_at", "is", null);
+    const ids = (assigned ?? []).map((r: any) => r.client_id);
     if (ids.length === 0) return setRows([]);
     const { data: profiles } = await supabase.from("profiles").select("*").in("id", ids).order("full_name");
     setRows(profiles ?? []);
   };
 
   useEffect(() => {
+    if (!user?.id) return;
     load();
     const ch = supabase
       .channel("admin-clients")
       .on("postgres_changes", { event: "*", schema: "public", table: "profiles" }, load)
       .on("postgres_changes", { event: "*", schema: "public", table: "user_roles" }, load)
+      .on("postgres_changes", { event: "*", schema: "public", table: "trainer_clients" }, load)
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, []);
+  }, [user?.id]);
 
   const toggleStatus = async (r: any) => {
     const next = r.status === "disabled" ? "active" : "disabled";
@@ -44,7 +63,7 @@ function Clients() {
 
   const filtered = rows.filter((r) =>
     r.full_name?.toLowerCase().includes(search.toLowerCase()) ||
-    r.email?.toLowerCase().includes(search.toLowerCase()),
+    displayLoginIdentifier(r).toLowerCase().includes(search.toLowerCase()),
   );
 
   return (
@@ -54,7 +73,7 @@ function Clients() {
         <button onClick={() => setShowCreate(true)} className="btn-primary">+ Crear cliente</button>
       </div>
 
-      <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar por nombre o correo..."
+      <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar por nombre o usuario..."
         className="h-12 w-full rounded-md border border-border bg-input/30 px-3 outline-none focus:border-gold" />
 
       <div className="surface-card overflow-hidden">
@@ -63,7 +82,7 @@ function Clients() {
             <thead className="bg-background/40 text-left text-muted-foreground">
               <tr>
                 <th className="p-4">Nombre</th>
-                <th className="p-4">Correo</th>
+                <th className="p-4">Usuario</th>
                 <th className="p-4">Estado</th>
                 <th className="p-4">Creado</th>
                 <th className="p-4"></th>
@@ -77,7 +96,7 @@ function Clients() {
                       {r.full_name}
                     </Link>
                   </td>
-                  <td className="p-4 text-muted-foreground">{r.email}</td>
+                  <td className="p-4 text-muted-foreground">{displayLoginIdentifier(r)}</td>
                   <td className="p-4">
                     {r.status === "disabled"
                       ? <span className="text-destructive">Deshabilitado</span>
@@ -104,7 +123,7 @@ function Clients() {
 
 function CreateClientModal({ onClose, onCreated, createFn }: { onClose: () => void; onCreated: () => void; createFn: any }) {
   const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [saving, setSaving] = useState(false);
@@ -113,8 +132,8 @@ function CreateClientModal({ onClose, onCreated, createFn }: { onClose: () => vo
     e.preventDefault();
     setSaving(true);
     try {
-      const res = await createFn({ data: { fullName, email, phone: phone || undefined, password: password || undefined } });
-      toast.success(`Cliente creado. Contraseña temporal: ${res.tempPassword}`, { duration: 20000 });
+      const res = await createFn({ data: { fullName, username, phone: phone || undefined, password } });
+      toast.success(res.message);
       onCreated();
     } catch (e: any) { toast.error(e.message); }
     finally { setSaving(false); }
@@ -126,9 +145,9 @@ function CreateClientModal({ onClose, onCreated, createFn }: { onClose: () => vo
         <h2 className="font-display text-2xl font-bold">Nuevo cliente</h2>
         <form onSubmit={submit} className="mt-4 space-y-3">
           <Field label="Nombre completo"><input required value={fullName} onChange={(e) => setFullName(e.target.value)} className="input" /></Field>
-          <Field label="Correo"><input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="input" /></Field>
+          <Field label="Usuario"><input required value={username} onChange={(e) => setUsername(e.target.value)} className="input" /></Field>
           <Field label="Teléfono (opcional)"><input value={phone} onChange={(e) => setPhone(e.target.value)} className="input" /></Field>
-          <Field label="Contraseña temporal (opcional)"><input value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Se genera automáticamente si se deja vacío" className="input" /></Field>
+          <Field label="Contraseña"><input type="password" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} className="input" /></Field>
           <div className="flex gap-2 pt-2">
             <button disabled={saving} className="btn-primary flex-1">{saving ? "Creando..." : "Crear cliente"}</button>
             <button type="button" onClick={onClose} className="btn-secondary">Cancelar</button>
