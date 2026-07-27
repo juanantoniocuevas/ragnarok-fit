@@ -10,10 +10,22 @@ export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
+const CLIENT_LOGIN_DOMAIN = "clientes.ragnarokfit.local";
+
+function normalizeUsername(value: string): string {
+  return value.trim().toLowerCase().replace(/\s+/g, "").replace(/[^a-z0-9._-]/g, "");
+}
+
+function toAuthEmail(identifier: string): string {
+  const value = identifier.trim();
+  if (value.includes("@")) return value.toLowerCase();
+  return `${normalizeUsername(value)}@${CLIENT_LOGIN_DOMAIN}`;
+}
+
 function LoginPage() {
   const navigate = useNavigate();
   const { role, user, loading } = useAuth();
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -25,12 +37,17 @@ function LoginPage() {
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const authEmail = toAuthEmail(identifier);
+    if (!authEmail || authEmail.startsWith(`@${CLIENT_LOGIN_DOMAIN}`)) {
+      toast.error("Ingresa un usuario o correo válido");
+      return;
+    }
     setSubmitting(true);
-    const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+    const { error } = await supabase.auth.signInWithPassword({ email: authEmail, password });
     setSubmitting(false);
     if (error) {
       // Security: Use generic message to prevent email enumeration
-      toast.error("Email o contraseña incorrectos");
+      toast.error("Usuario o contraseña incorrectos");
       return;
     }
     toast.success("Bienvenido");
@@ -47,8 +64,8 @@ function LoginPage() {
           <p className="mt-1 text-sm text-muted-foreground">Accede a tu portal personal.</p>
           <form onSubmit={onSubmit} className="mt-6 space-y-4">
             <div>
-              <label className="mb-1 block text-sm font-medium">Correo</label>
-              <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
+              <label className="mb-1 block text-sm font-medium">Usuario o correo</label>
+              <input type="text" required value={identifier} onChange={(e) => setIdentifier(e.target.value)}
                 className="h-12 w-full rounded-md border border-border bg-input/30 px-3 text-base outline-none focus:border-gold" />
             </div>
             <div>
@@ -61,6 +78,9 @@ function LoginPage() {
                 ¿Olvidaste tu contraseña?
               </Link>
             </div>
+            <p className="text-xs text-muted-foreground">
+              Si tu cuenta fue creada por tu entrenador y no usa un correo real, pide el restablecimiento directamente en administración.
+            </p>
             <button type="submit" disabled={submitting} className="btn-primary w-full disabled:opacity-60">
               {submitting ? "Ingresando..." : "Ingresar"}
             </button>
