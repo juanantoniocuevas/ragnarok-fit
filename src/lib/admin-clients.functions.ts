@@ -12,6 +12,14 @@ function buildClientLoginEmail(username: string): string {
   return `${normalizeUsername(username)}@${CLIENT_LOGIN_DOMAIN}`;
 }
 
+async function rollbackCreatedClient(userId: string) {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { error } = await supabaseAdmin.auth.admin.deleteUser(userId);
+  if (error) {
+    console.error("Error rolling back incomplete client creation:", error);
+  }
+}
+
 async function assertTrainer(supabase: any, userId: string) {
   const { data, error } = await supabase.rpc("has_role", { _user_id: userId, _role: "trainer" });
   if (error) throw new Error(error.message);
@@ -59,14 +67,24 @@ export const adminCreateClient = createServerFn({ method: "POST" })
     });
     if (error) throw new Error(error.message);
     const uid = created.user!.id;
-    await supabaseAdmin.from("profiles").upsert({
+    const { error: profileError } = await supabaseAdmin.from("profiles").upsert({
       id: uid,
       full_name: data.fullName,
       email: loginEmail,
       phone: data.phone ?? null,
     }, { onConflict: "id" });
-    await supabaseAdmin.from("user_roles").upsert({ user_id: uid, role: "client" }, { onConflict: "user_id,role" });
-    await supabaseAdmin
+    if (profileError) {
+      await rollbackCreatedClient(uid);
+      throw new Error(profileError.message);
+    }
+    const { error: roleError } = await supabaseAdmin
+      .from("user_roles")
+      .upsert({ user_id: uid, role: "client" }, { onConflict: "user_id,role" });
+    if (roleError) {
+      await rollbackCreatedClient(uid);
+      throw new Error(roleError.message);
+    }
+    const { error: relationError } = await supabaseAdmin
       .from("trainer_clients")
       .upsert(
         {
@@ -77,6 +95,10 @@ export const adminCreateClient = createServerFn({ method: "POST" })
         },
         { onConflict: "trainer_id,client_id" },
       );
+    if (relationError) {
+      await rollbackCreatedClient(uid);
+      throw new Error(relationError.message);
+    }
     return { id: uid, message: `Cliente creado exitosamente. Usuario: ${username}` };
   });
 

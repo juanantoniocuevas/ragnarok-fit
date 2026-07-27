@@ -16,7 +16,10 @@ function AdminLayout() {
     if (loading) return;
     if (!user) navigate({ to: "/login" });
     else if (role === "client") navigate({ to: "/dashboard" });
-  }, [user, role, loading, navigate]);
+    else if (role === null) {
+      signOut().then(() => navigate({ to: "/login" }));
+    }
+  }, [user, role, loading, navigate, signOut]);
 
   if (loading || !user || role !== "trainer")
     return <div className="flex min-h-screen items-center justify-center text-muted-foreground">Cargando...</div>;

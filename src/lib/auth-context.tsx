@@ -27,14 +27,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const { data, error } = await supabase
           .from("user_roles")
           .select("role")
-          .eq("user_id", userId)
-          .maybeSingle();
+          .eq("user_id", userId);
 
         if (error) {
           console.error("Error loading user role:", error);
           return null;
         }
-        return (data?.role as Role) ?? null;
+        const roles = (data ?? []).map((entry: any) => entry.role as Role);
+        if (roles.includes("trainer")) return "trainer";
+        if (roles.includes("client")) return "client";
+        return null;
       } catch (error) {
         console.error("Error loading user role:", error);
         return null;
