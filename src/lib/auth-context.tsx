@@ -49,6 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!isMounted) return;
 
         if (data.session?.user) {
+          setLoading(true);
           const userRole = await loadUserRole(data.session.user.id);
           if (!isMounted) return;
 
@@ -70,13 +71,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: sub } = supabase.auth.onAuthStateChange(async (_event, s) => {
       if (!isMounted) return;
 
+      setLoading(true);
       setSession(s);
 
       if (s?.user) {
         const userRole = await loadUserRole(s.user.id);
-        if (isMounted) setRole(userRole);
+        if (isMounted) {
+          setRole(userRole);
+          setLoading(false);
+        }
       } else {
         setRole(null);
+        setLoading(false);
       }
     });
 

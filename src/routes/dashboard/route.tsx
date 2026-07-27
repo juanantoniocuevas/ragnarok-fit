@@ -16,10 +16,7 @@ function DashboardLayout() {
     if (loading) return;
     if (!user) navigate({ to: "/login" });
     else if (role === "trainer") navigate({ to: "/admin" });
-    else if (role === null) {
-      signOut().then(() => navigate({ to: "/login" }));
-    }
-  }, [user, role, loading, navigate, signOut]);
+  }, [user, role, loading, navigate]);
 
   if (loading || !user || role !== "client")
     return <div className="flex min-h-screen items-center justify-center text-muted-foreground">Cargando...</div>;
