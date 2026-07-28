@@ -37,7 +37,14 @@ function AdminLayout() {
           <div className="flex items-center gap-3">
             <span className="hidden text-sm text-muted-foreground md:inline">Panel del Preparador</span>
             <ThemeToggle />
-            <button onClick={() => signOut().then(() => navigate({ to: "/" }))} className="btn-secondary text-sm">
+            <button
+              onClick={() =>
+                signOut().then(() => {
+                  window.location.assign("/login");
+                })
+              }
+              className="btn-secondary text-sm"
+            >
               <LogOut className="mr-2 h-4 w-4" /> Salir
             </button>
           </div>

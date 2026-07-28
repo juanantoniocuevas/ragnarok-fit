@@ -41,7 +41,14 @@ function DashboardLayout() {
           <Link to="/dashboard"><Logo className="h-16 w-auto" /></Link>
           <div className="flex items-center gap-3">
             <ThemeToggle />
-            <button onClick={() => signOut().then(() => navigate({ to: "/" }))} className="btn-secondary text-sm">
+            <button
+              onClick={() =>
+                signOut().then(() => {
+                  window.location.assign("/login");
+                })
+              }
+              className="btn-secondary text-sm"
+            >
               <LogOut className="mr-2 h-4 w-4" /> Salir
             </button>
           </div>
