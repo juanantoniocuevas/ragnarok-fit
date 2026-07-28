@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
-import { adminCreateClient, adminSetClientStatus } from "@/lib/admin-clients.functions";
+import { adminCreateClient, adminListManagedClients, adminSetClientStatus } from "@/lib/admin-clients.functions";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin/clients")({ component: Clients });
@@ -24,19 +24,19 @@ function Clients() {
   const [search, setSearch] = useState("");
   const [showCreate, setShowCreate] = useState(false);
   const createFn = useServerFn(adminCreateClient);
+  const listClientsFn = useServerFn(adminListManagedClients);
   const setStatusFn = useServerFn(adminSetClientStatus);
 
   const load = async () => {
     if (!user?.id) return;
-    const { data: assigned } = await supabase
-      .from("trainer_clients")
-      .select("client_id")
-      .eq("trainer_id", user.id)
-      .not("accepted_at", "is", null);
-    const ids = (assigned ?? []).map((r: any) => r.client_id);
-    if (ids.length === 0) return setRows([]);
-    const { data: profiles } = await supabase.from("profiles").select("*").in("id", ids).order("full_name");
-    setRows(profiles ?? []);
+    try {
+      const data = await listClientsFn({ data: {} });
+      setRows(data ?? []);
+    } catch (error: any) {
+      console.error("Error loading managed clients:", error);
+      setRows([]);
+      toast.error(error.message || "No se pudieron cargar los clientes");
+    }
   };
 
   useEffect(() => {
