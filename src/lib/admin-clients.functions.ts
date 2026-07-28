@@ -43,6 +43,35 @@ async function assertTargetIsClient(clientId: string) {
   }
 }
 
+export const adminListManagedClients = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({}).parse(d ?? {}))
+  .handler(async ({ context }) => {
+    await assertTrainer(context.supabase, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: assigned, error: assignedError } = await supabaseAdmin
+      .from("trainer_clients")
+      .select("client_id")
+      .eq("trainer_id", context.userId)
+      .not("accepted_at", "is", null);
+
+    if (assignedError) throw new Error(assignedError.message);
+
+    const ids = (assigned ?? []).map((row: any) => row.client_id);
+    if (ids.length === 0) return [];
+
+    const { data: profiles, error: profilesError } = await supabaseAdmin
+      .from("profiles")
+      .select("id, full_name, email, status, created_at")
+      .in("id", ids)
+      .order("full_name");
+
+    if (profilesError) throw new Error(profilesError.message);
+
+    return profiles ?? [];
+  });
+
 export const adminCreateClient = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { username: string; fullName: string; phone?: string; password: string }) =>
