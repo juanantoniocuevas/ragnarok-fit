@@ -14,6 +14,21 @@ interface AuthCtx {
 
 const Ctx = createContext<AuthCtx>({ user: null, session: null, role: null, loading: true, signOut: async () => {} });
 
+function clearSupabaseStorage() {
+  if (typeof window === "undefined") return;
+
+  for (const storage of [window.localStorage, window.sessionStorage]) {
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < storage.length; i++) {
+      const key = storage.key(i);
+      if (key && key.startsWith("sb-")) {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach((key) => storage.removeItem(key));
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [role, setRole] = useState<Role>(null);
@@ -94,6 +109,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     await supabase.auth.signOut();
+    clearSupabaseStorage();
+    setSession(null);
+    setRole(null);
+    setLoading(false);
   };
 
   return <Ctx.Provider value={{ user: session?.user ?? null, session, role, loading, signOut }}>{children}</Ctx.Provider>;
