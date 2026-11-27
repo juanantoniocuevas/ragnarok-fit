@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { displayLoginIdentifier as displayUser } from "@/lib/client-login";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
@@ -16,13 +17,8 @@ import {
 
 export const Route = createFileRoute("/admin/clients/$clientId")({ component: ClientDetail });
 
-const CLIENT_LOGIN_DOMAIN = "@clientes.ragnarokfit.local";
-
-function displayLoginIdentifier(email: string | null | undefined): string {
-  const raw = email ?? "";
-  if (raw.endsWith(CLIENT_LOGIN_DOMAIN)) return raw.slice(0, -CLIENT_LOGIN_DOMAIN.length);
-  return raw;
-}
+// Muestra el usuario del cliente en vez de su correo interno.
+const displayLoginIdentifier = (email: string | null | undefined) => displayUser({ email });
 
 function ClientDetail() {
   const { clientId } = Route.useParams();

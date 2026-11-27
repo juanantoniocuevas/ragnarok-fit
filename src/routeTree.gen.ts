@@ -19,6 +19,7 @@ import { Route as SignupRouteImport } from './routes/signup'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as AdminClientsRouteImport } from './routes/admin/clients'
 import { Route as AdminRecommendationsRouteImport } from './routes/admin/recommendations'
+import { Route as AdminTrainersRouteImport } from './routes/admin/trainers'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as DashboardContactRouteImport } from './routes/dashboard/contact'
 import { Route as DashboardMeasurementsRouteImport } from './routes/dashboard/measurements'
@@ -78,6 +79,11 @@ const AdminRecommendationsRoute = AdminRecommendationsRouteImport.update({
   path: '/recommendations',
   getParentRoute: () => AdminRouteRoute,
 } as any)
+const AdminTrainersRoute = AdminTrainersRouteImport.update({
+  id: '/trainers',
+  path: '/trainers',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
 const DashboardIndexRoute = DashboardIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -131,6 +137,7 @@ export interface FileRoutesByFullPath {
   '/signup': typeof SignupRoute
   '/admin/clients': typeof AdminClientsRouteWithChildren
   '/admin/recommendations': typeof AdminRecommendationsRoute
+  '/admin/trainers': typeof AdminTrainersRoute
   '/dashboard/contact': typeof DashboardContactRoute
   '/dashboard/measurements': typeof DashboardMeasurementsRoute
   '/dashboard/physical-profile': typeof DashboardPhysicalProfileRoute
@@ -149,6 +156,7 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/admin/clients': typeof AdminClientsRouteWithChildren
   '/admin/recommendations': typeof AdminRecommendationsRoute
+  '/admin/trainers': typeof AdminTrainersRoute
   '/dashboard/contact': typeof DashboardContactRoute
   '/dashboard/measurements': typeof DashboardMeasurementsRoute
   '/dashboard/physical-profile': typeof DashboardPhysicalProfileRoute
@@ -170,6 +178,7 @@ export interface FileRoutesById {
   '/signup': typeof SignupRoute
   '/admin/clients': typeof AdminClientsRouteWithChildren
   '/admin/recommendations': typeof AdminRecommendationsRoute
+  '/admin/trainers': typeof AdminTrainersRoute
   '/dashboard/contact': typeof DashboardContactRoute
   '/dashboard/measurements': typeof DashboardMeasurementsRoute
   '/dashboard/physical-profile': typeof DashboardPhysicalProfileRoute
@@ -192,6 +201,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/admin/clients'
     | '/admin/recommendations'
+    | '/admin/trainers'
     | '/dashboard/contact'
     | '/dashboard/measurements'
     | '/dashboard/physical-profile'
@@ -210,6 +220,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/admin/clients'
     | '/admin/recommendations'
+    | '/admin/trainers'
     | '/dashboard/contact'
     | '/dashboard/measurements'
     | '/dashboard/physical-profile'
@@ -230,6 +241,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/admin/clients'
     | '/admin/recommendations'
+    | '/admin/trainers'
     | '/dashboard/contact'
     | '/dashboard/measurements'
     | '/dashboard/physical-profile'
@@ -323,6 +335,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminRecommendationsRouteImport
       parentRoute: typeof AdminRouteRoute
     }
+    '/admin/trainers': {
+      id: '/admin/trainers'
+      path: '/trainers'
+      fullPath: '/admin/trainers'
+      preLoaderRoute: typeof AdminTrainersRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
     '/dashboard/': {
       id: '/dashboard/'
       path: '/'
@@ -397,12 +416,14 @@ const AdminClientsRouteWithChildren = AdminClientsRoute._addFileChildren(
 interface AdminRouteRouteChildren {
   AdminClientsRoute: typeof AdminClientsRouteWithChildren
   AdminRecommendationsRoute: typeof AdminRecommendationsRoute
+  AdminTrainersRoute: typeof AdminTrainersRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
 const AdminRouteRouteChildren: AdminRouteRouteChildren = {
   AdminClientsRoute: AdminClientsRouteWithChildren,
   AdminRecommendationsRoute: AdminRecommendationsRoute,
+  AdminTrainersRoute: AdminTrainersRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
 

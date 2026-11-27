@@ -247,6 +247,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_manage_client: {
+        Args: { _actor: string; _client: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -255,13 +259,14 @@ export type Database = {
         Returns: boolean
       }
       is_manageable_client: { Args: { _target: string }; Returns: boolean }
+      is_owner: { Args: { _user_id: string }; Returns: boolean }
       is_trainer_of: {
         Args: { _client: string; _trainer: string }
         Returns: boolean
       }
     }
     Enums: {
-      app_role: "trainer" | "client"
+      app_role: "trainer" | "client" | "owner"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -389,7 +394,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["trainer", "client"],
+      app_role: ["trainer", "client", "owner"],
     },
   },
 } as const

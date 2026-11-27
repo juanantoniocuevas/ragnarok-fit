@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { isClientLoginEmail } from "@/lib/client-login";
 import { useState } from "react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,6 +23,10 @@ function ForgotPasswordPage() {
     const parsed = schema.safeParse(email);
     if (!parsed.success) {
       toast.error(parsed.error.issues[0].message);
+      return;
+    }
+    if (isClientLoginEmail(parsed.data)) {
+      toast.error("Las cuentas con usuario no reciben correos. Pídele a tu preparador una contraseña nueva.");
       return;
     }
     setSubmitting(true);

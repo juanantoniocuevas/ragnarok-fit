@@ -3,12 +3,12 @@ import { useEffect } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { Logo } from "@/components/Logo";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { Users, MessageSquare, LogOut } from "lucide-react";
+import { Users, MessageSquare, LogOut, ShieldCheck } from "lucide-react";
 
 export const Route = createFileRoute("/admin")({ ssr: false, component: AdminLayout });
 
 function AdminLayout() {
-  const { user, role, loading, signOut } = useAuth();
+  const { user, role, isOwner, loading, signOut } = useAuth();
   const navigate = useNavigate();
   const path = useRouterState({ select: (s) => s.location.pathname });
 
@@ -25,8 +25,9 @@ function AdminLayout() {
     return <div className="flex min-h-screen items-center justify-center text-muted-foreground">Cargando...</div>;
 
   const links = [
-    { to: "/admin/clients", label: "Mis Clientes", icon: Users },
+    { to: "/admin/clients", label: isOwner ? "Clientes" : "Mis Clientes", icon: Users },
     { to: "/admin/recommendations", label: "Recomendaciones", icon: MessageSquare },
+    ...(isOwner ? [{ to: "/admin/trainers", label: "Preparadores", icon: ShieldCheck }] : []),
   ];
 
   return (
@@ -35,7 +36,7 @@ function AdminLayout() {
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
           <Link to="/admin/clients"><Logo className="h-16 w-auto" /></Link>
           <div className="flex items-center gap-3">
-            <span className="hidden text-sm text-muted-foreground md:inline">Panel del Preparador</span>
+            <span className="hidden text-sm text-muted-foreground md:inline">{isOwner ? "Panel del Dueño" : "Panel del Preparador"}</span>
             <ThemeToggle />
             <button
               onClick={() =>

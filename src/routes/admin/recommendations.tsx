@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { displayLoginIdentifier as displayUser } from "@/lib/client-login";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,13 +9,8 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin/recommendations")({ component: Page });
 
-const CLIENT_LOGIN_DOMAIN = "@clientes.ragnarokfit.local";
-
-function displayLoginIdentifier(email: string | null | undefined): string {
-  const raw = email ?? "";
-  if (raw.endsWith(CLIENT_LOGIN_DOMAIN)) return raw.slice(0, -CLIENT_LOGIN_DOMAIN.length);
-  return raw;
-}
+// Muestra el usuario del cliente en vez de su correo interno.
+const displayLoginIdentifier = (email: string | null | undefined) => displayUser({ email });
 
 function Page() {
   const { user } = useAuth();

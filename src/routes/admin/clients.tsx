@@ -3,29 +3,43 @@ import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
-import { adminCreateClient, adminListManagedClients, adminSetClientStatus } from "@/lib/admin-clients.functions";
+import { adminCreateClient, adminListManagedClients, adminSetClientStatus, ownerAssignClient, ownerListTrainers } from "@/lib/admin-clients.functions";
+import { displayLoginIdentifier } from "@/lib/client-login";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin/clients")({ component: Clients });
 
-const CLIENT_LOGIN_DOMAIN = "@clientes.ragnarokfit.local";
-
-function displayLoginIdentifier(profile: any): string {
-  const raw = profile?.email ?? "";
-  if (typeof raw === "string" && raw.endsWith(CLIENT_LOGIN_DOMAIN)) {
-    return raw.slice(0, -CLIENT_LOGIN_DOMAIN.length);
-  }
-  return raw;
-}
-
 function Clients() {
-  const { user } = useAuth();
+  const { user, isOwner } = useAuth();
   const [rows, setRows] = useState<any[]>([]);
+  const [trainers, setTrainers] = useState<any[]>([]);
+  const [trainerFilter, setTrainerFilter] = useState("");
   const [search, setSearch] = useState("");
   const [showCreate, setShowCreate] = useState(false);
   const createFn = useServerFn(adminCreateClient);
   const listClientsFn = useServerFn(adminListManagedClients);
   const setStatusFn = useServerFn(adminSetClientStatus);
+  const assignFn = useServerFn(ownerAssignClient);
+  const listTrainersFn = useServerFn(ownerListTrainers);
+
+  // Solo el dueño necesita la lista de preparadores (para asignar clientes).
+  useEffect(() => {
+    if (!isOwner) return;
+    listTrainersFn({ data: {} })
+      .then((t) => setTrainers((t ?? []).filter((x: any) => x.status !== "disabled")))
+      .catch(() => setTrainers([]));
+  }, [isOwner]);
+
+  const reassign = async (r: any, trainerId: string) => {
+    if (!trainerId || trainerId === r.trainer_id) return;
+    const t = trainers.find((x) => x.id === trainerId);
+    if (!confirm(`¿Asignar a ${r.full_name} al preparador ${t?.full_name ?? ""}?`)) return;
+    try {
+      await assignFn({ data: { clientId: r.id, trainerId } });
+      toast.success("Cliente asignado");
+      load();
+    } catch (e: any) { toast.error(e.message); }
+  };
 
   const load = async () => {
     if (!user?.id) return;
@@ -62,8 +76,9 @@ function Clients() {
   };
 
   const filtered = rows.filter((r) =>
-    r.full_name?.toLowerCase().includes(search.toLowerCase()) ||
-    displayLoginIdentifier(r).toLowerCase().includes(search.toLowerCase()),
+    (r.full_name?.toLowerCase().includes(search.toLowerCase()) ||
+      displayLoginIdentifier(r).toLowerCase().includes(search.toLowerCase())) &&
+    (!trainerFilter || (trainerFilter === "none" ? !r.trainer_id : r.trainer_id === trainerFilter)),
   );
 
   return (
@@ -73,8 +88,18 @@ function Clients() {
         <button onClick={() => setShowCreate(true)} className="btn-primary">+ Crear cliente</button>
       </div>
 
-      <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar por nombre o usuario..."
-        className="h-12 w-full rounded-md border border-border bg-input/30 px-3 outline-none focus:border-gold" />
+      <div className="flex flex-wrap gap-3">
+        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar por nombre o usuario..."
+          className="h-12 min-w-0 flex-1 rounded-md border border-border bg-input/30 px-3 outline-none focus:border-gold" />
+        {isOwner && (
+          <select id="filtro-preparador" value={trainerFilter} onChange={(e) => setTrainerFilter(e.target.value)} aria-label="Filtrar por preparador"
+            className="h-12 rounded-md border border-border bg-input/30 px-3 outline-none focus:border-gold">
+            <option value="">Todos los preparadores</option>
+            {trainers.map((t) => <option key={t.id} value={t.id}>{t.full_name}{t.is_owner ? " (dueño)" : ""}</option>)}
+            <option value="none">Sin preparador</option>
+          </select>
+        )}
+      </div>
 
       <div className="surface-card overflow-hidden">
         <div className="overflow-x-auto">
@@ -83,6 +108,7 @@ function Clients() {
               <tr>
                 <th className="p-4">Nombre</th>
                 <th className="p-4">Usuario</th>
+                {isOwner && <th className="p-4">Preparador</th>}
                 <th className="p-4">Estado</th>
                 <th className="p-4">Creado</th>
                 <th className="p-4"></th>
@@ -97,6 +123,16 @@ function Clients() {
                     </Link>
                   </td>
                   <td className="p-4 text-muted-foreground">{displayLoginIdentifier(r)}</td>
+                  {isOwner && (
+                    <td className="p-4">
+                      <select value={r.trainer_id ?? ""} onChange={(e) => reassign(r, e.target.value)} aria-label={`Preparador de ${r.full_name}`}
+                        className="h-10 rounded-md border border-border bg-input/30 px-2 text-sm outline-none focus:border-gold">
+                        {!r.trainer_id && <option value="">Sin preparador</option>}
+                        {r.trainer_id && !trainers.some((t) => t.id === r.trainer_id) && <option value={r.trainer_id}>{r.trainer_name ?? "—"}</option>}
+                        {trainers.map((t) => <option key={t.id} value={t.id}>{t.full_name}{t.is_owner ? " (dueño)" : ""}</option>)}
+                      </select>
+                    </td>
+                  )}
                   <td className="p-4">
                     {r.status === "disabled"
                       ? <span className="text-destructive">Deshabilitado</span>
@@ -110,18 +146,19 @@ function Clients() {
                   </td>
                 </tr>
               ))}
-              {filtered.length === 0 && <tr><td colSpan={5} className="p-8 text-center text-muted-foreground">Sin clientes.</td></tr>}
+              {filtered.length === 0 && <tr><td colSpan={isOwner ? 6 : 5} className="p-8 text-center text-muted-foreground">Sin clientes.</td></tr>}
             </tbody>
           </table>
         </div>
       </div>
 
-      {showCreate && <CreateClientModal onClose={() => setShowCreate(false)} onCreated={() => { load(); setShowCreate(false); }} createFn={createFn} />}
+      {showCreate && <CreateClientModal onClose={() => setShowCreate(false)} onCreated={() => { load(); setShowCreate(false); }} createFn={createFn} trainers={isOwner ? trainers : []} selfId={user?.id ?? ""} />}
     </div>
   );
 }
 
-function CreateClientModal({ onClose, onCreated, createFn }: { onClose: () => void; onCreated: () => void; createFn: any }) {
+function CreateClientModal({ onClose, onCreated, createFn, trainers, selfId }: { onClose: () => void; onCreated: () => void; createFn: any; trainers: any[]; selfId: string }) {
+  const [trainerId, setTrainerId] = useState(selfId);
   const [fullName, setFullName] = useState("");
   const [username, setUsername] = useState("");
   const [phone, setPhone] = useState("");
@@ -132,7 +169,7 @@ function CreateClientModal({ onClose, onCreated, createFn }: { onClose: () => vo
     e.preventDefault();
     setSaving(true);
     try {
-      const res = await createFn({ data: { fullName, username, phone: phone || undefined, password } });
+      const res = await createFn({ data: { fullName, username, phone: phone || undefined, password, trainerId: trainers.length && trainerId ? trainerId : undefined } });
       toast.success(res.message);
       onCreated();
     } catch (e: any) { toast.error(e.message); }
@@ -148,6 +185,13 @@ function CreateClientModal({ onClose, onCreated, createFn }: { onClose: () => vo
           <Field label="Usuario"><input required value={username} onChange={(e) => setUsername(e.target.value)} className="input" /></Field>
           <Field label="Teléfono (opcional)"><input value={phone} onChange={(e) => setPhone(e.target.value)} className="input" /></Field>
           <Field label="Contraseña"><input type="password" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} className="input" /></Field>
+          {trainers.length > 0 && (
+            <Field label="Preparador a cargo">
+              <select id="preparador-nuevo-cliente" value={trainerId} onChange={(e) => setTrainerId(e.target.value)} className="input">
+                {trainers.map((t) => <option key={t.id} value={t.id}>{t.full_name}{t.id === selfId ? " (tú)" : ""}</option>)}
+              </select>
+            </Field>
+          )}
           <div className="flex gap-2 pt-2">
             <button disabled={saving} className="btn-primary flex-1">{saving ? "Creando..." : "Crear cliente"}</button>
             <button type="button" onClick={onClose} className="btn-secondary">Cancelar</button>
