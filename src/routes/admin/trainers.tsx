@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { friendlyError } from "@/lib/client-login";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/lib/auth-context";
@@ -32,7 +33,7 @@ function Trainers() {
     try {
       setRows((await listFn({ data: {} })) ?? []);
     } catch (e: any) {
-      toast.error(e.message || "No se pudieron cargar los preparadores");
+      toast.error(friendlyError(e));
     }
   };
 
@@ -52,7 +53,7 @@ function Trainers() {
       toast.success(res.message);
       load();
     } catch (e: any) {
-      toast.error(e.message);
+      toast.error(friendlyError(e));
     }
   };
 
@@ -146,7 +147,7 @@ function CreateTrainerModal({ createFn, onClose, onCreated }: { createFn: any; o
       toast.success(res.message);
       onCreated();
     } catch (e: any) {
-      toast.error(e.message);
+      toast.error(friendlyError(e));
     } finally {
       setSaving(false);
     }
@@ -189,7 +190,7 @@ function ResetPasswordModal({ trainer, resetFn, onClose }: { trainer: any; reset
       toast.success(res.message);
       onClose();
     } catch (e: any) {
-      toast.error(e.message);
+      toast.error(friendlyError(e));
     } finally {
       setSaving(false);
     }
