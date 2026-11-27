@@ -8,6 +8,24 @@ import { CLIENT_LOGIN_DOMAIN, normalizeUsername } from "@/lib/client-login";
 //  - Preparador (trainer): gestiona solo a los clientes que tiene asignados.
 // Toda acción se verifica aquí en el servidor, además de las reglas de la base de datos.
 
+const usernameSchema = z
+  .string()
+  .transform(normalizeUsername)
+  .pipe(
+    z.string()
+      .min(3, "El usuario debe tener al menos 3 letras o números")
+      .max(40, "El usuario puede tener como máximo 40 caracteres"),
+  );
+const passwordSchema = z
+  .string()
+  .min(8, "La contraseña debe tener al menos 8 caracteres")
+  .max(72, "La contraseña es demasiado larga");
+const fullNameSchema = z
+  .string()
+  .trim()
+  .min(2, "Escribe el nombre completo")
+  .max(120, "El nombre es demasiado largo");
+
 function buildClientLoginEmail(username: string): string {
   return `${normalizeUsername(username)}@${CLIENT_LOGIN_DOMAIN}`;
 }
@@ -141,10 +159,10 @@ export const adminCreateClient = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { username: string; fullName: string; phone?: string; password: string; trainerId?: string }) =>
     z.object({
-      username: z.string().trim().min(3).max(40).regex(/^[a-zA-Z0-9._-]+$/, "Usuario inválido"),
-      fullName: z.string().trim().min(2).max(120),
+      username: usernameSchema,
+      fullName: fullNameSchema,
       phone: z.string().trim().max(30).optional(),
-      password: z.string().min(8).max(72),
+      password: passwordSchema,
       trainerId: z.string().uuid().optional(),
     }).parse(d),
   )
@@ -191,8 +209,8 @@ export const adminUpdateClient = createServerFn({ method: "POST" })
   .inputValidator((d: { clientId: string; fullName?: string; username?: string; phone?: string | null }) =>
     z.object({
       clientId: z.string().uuid(),
-      fullName: z.string().trim().min(2).max(120).optional(),
-      username: z.string().trim().min(3).max(40).regex(/^[a-zA-Z0-9._-]+$/, "Usuario inválido").optional(),
+      fullName: fullNameSchema.optional(),
+      username: usernameSchema.optional(),
       phone: z.string().trim().max(30).nullable().optional(),
     }).parse(d),
   )
@@ -226,7 +244,7 @@ export const adminUpdateClient = createServerFn({ method: "POST" })
 export const adminResetClientPassword = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { clientId: string; password: string }) =>
-    z.object({ clientId: z.string().uuid(), password: z.string().min(8).max(72) }).parse(d),
+    z.object({ clientId: z.string().uuid(), password: passwordSchema }).parse(d),
   )
   .handler(async ({ data, context }) => {
     await assertStaff(context.userId);
@@ -326,8 +344,8 @@ export const ownerCreateTrainer = createServerFn({ method: "POST" })
   .inputValidator((d: { email: string; fullName: string; password: string }) =>
     z.object({
       email: z.string().trim().toLowerCase().email("Correo inválido").max(200),
-      fullName: z.string().trim().min(2).max(120),
-      password: z.string().min(8).max(72),
+      fullName: fullNameSchema,
+      password: passwordSchema,
     }).parse(d),
   )
   .handler(async ({ data, context }) => {
@@ -408,7 +426,7 @@ export const ownerSetTrainerStatus = createServerFn({ method: "POST" })
 export const ownerResetTrainerPassword = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { trainerId: string; password: string }) =>
-    z.object({ trainerId: z.string().uuid(), password: z.string().min(8).max(72) }).parse(d),
+    z.object({ trainerId: z.string().uuid(), password: passwordSchema }).parse(d),
   )
   .handler(async ({ data, context }) => {
     await assertOwner(context.userId);

@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { displayLoginIdentifier as displayUser } from "@/lib/client-login";
+import { displayLoginIdentifier as displayUser, friendlyError } from "@/lib/client-login";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
@@ -109,7 +109,7 @@ function ClientDetail() {
       await setStatusFn({ data: { clientId, status: next } });
       toast.success("Estado actualizado");
       load();
-    } catch (e: any) { toast.error(e.message); }
+    } catch (e: any) { toast.error(friendlyError(e)); }
   };
 
   if (loading) return <p className="text-muted-foreground">Cargando...</p>;
@@ -172,7 +172,7 @@ function ClientDetail() {
               toast.success("Datos actualizados");
               setEditing(false);
               load();
-            } catch (e: any) { toast.error(e.message); }
+            } catch (e: any) { toast.error(friendlyError(e)); }
           }}
         />
       )}
@@ -185,7 +185,7 @@ function ClientDetail() {
               const res = await resetPwFn({ data: { clientId, password } });
               toast.success(res.message);
               setShowResetPassword(false);
-            } catch (e: any) { toast.error(e.message); }
+            } catch (e: any) { toast.error(friendlyError(e)); }
           }}
         />
       )}

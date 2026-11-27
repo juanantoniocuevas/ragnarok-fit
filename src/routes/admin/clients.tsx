@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { adminCreateClient, adminListManagedClients, adminSetClientStatus, ownerAssignClient, ownerListTrainers } from "@/lib/admin-clients.functions";
-import { displayLoginIdentifier } from "@/lib/client-login";
+import { displayLoginIdentifier, friendlyError, normalizeUsername } from "@/lib/client-login";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin/clients")({ component: Clients });
@@ -38,7 +38,7 @@ function Clients() {
       await assignFn({ data: { clientId: r.id, trainerId } });
       toast.success("Cliente asignado");
       load();
-    } catch (e: any) { toast.error(e.message); }
+    } catch (e: any) { toast.error(friendlyError(e)); }
   };
 
   const load = async () => {
@@ -72,7 +72,7 @@ function Clients() {
       await setStatusFn({ data: { clientId: r.id, status: next } });
       toast.success("Estado actualizado");
       load();
-    } catch (e: any) { toast.error(e.message); }
+    } catch (e: any) { toast.error(friendlyError(e)); }
   };
 
   const filtered = rows.filter((r) =>
@@ -172,7 +172,7 @@ function CreateClientModal({ onClose, onCreated, createFn, trainers, selfId }: {
       const res = await createFn({ data: { fullName, username, phone: phone || undefined, password, trainerId: trainers.length && trainerId ? trainerId : undefined } });
       toast.success(res.message);
       onCreated();
-    } catch (e: any) { toast.error(e.message); }
+    } catch (e: any) { toast.error(friendlyError(e)); }
     finally { setSaving(false); }
   };
 
@@ -182,7 +182,14 @@ function CreateClientModal({ onClose, onCreated, createFn, trainers, selfId }: {
         <h2 className="font-display text-2xl font-bold">Nuevo cliente</h2>
         <form onSubmit={submit} className="mt-4 space-y-3">
           <Field label="Nombre completo"><input required value={fullName} onChange={(e) => setFullName(e.target.value)} className="input" /></Field>
-          <Field label="Usuario"><input required value={username} onChange={(e) => setUsername(e.target.value)} className="input" /></Field>
+          <Field label="Usuario (con esto ingresará el cliente)">
+            <input id="nuevo-cliente-usuario" required value={username} onChange={(e) => setUsername(e.target.value)} className="input" autoCapitalize="none" autoCorrect="off" />
+            <span className="mt-1 block text-xs text-muted-foreground">
+              {username.trim()
+                ? <>Quedará como: <strong className="text-foreground">{normalizeUsername(username) || "—"}</strong></>
+                : "Sin espacios ni tildes; se ajusta solo. Ej.: maria.gonzalez"}
+            </span>
+          </Field>
           <Field label="Teléfono (opcional)"><input value={phone} onChange={(e) => setPhone(e.target.value)} className="input" /></Field>
           <Field label="Contraseña"><input type="password" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} className="input" /></Field>
           {trainers.length > 0 && (
