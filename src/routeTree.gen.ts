@@ -9,48 +9,28 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as SignupRouteImport } from './routes/signup'
-import { Route as ResetPasswordRouteImport } from './routes/reset-password'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
-import { Route as DashboardRouteRouteImport } from './routes/dashboard/route'
-import { Route as AdminRouteRouteImport } from './routes/admin/route'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
+import { Route as AdminRouteRouteImport } from './routes/admin/route'
+import { Route as DashboardRouteRouteImport } from './routes/dashboard/route'
+import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as SignupRouteImport } from './routes/signup'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
-import { Route as DashboardRecommendationsRouteImport } from './routes/dashboard/recommendations'
-import { Route as DashboardProgressRouteImport } from './routes/dashboard/progress'
-import { Route as DashboardProfileRouteImport } from './routes/dashboard/profile'
-import { Route as DashboardPhysicalProfileRouteImport } from './routes/dashboard/physical-profile'
-import { Route as DashboardMeasurementsRouteImport } from './routes/dashboard/measurements'
-import { Route as DashboardContactRouteImport } from './routes/dashboard/contact'
-import { Route as AdminRecommendationsRouteImport } from './routes/admin/recommendations'
 import { Route as AdminClientsRouteImport } from './routes/admin/clients'
+import { Route as AdminRecommendationsRouteImport } from './routes/admin/recommendations'
+import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
+import { Route as DashboardContactRouteImport } from './routes/dashboard/contact'
+import { Route as DashboardMeasurementsRouteImport } from './routes/dashboard/measurements'
+import { Route as DashboardPhysicalProfileRouteImport } from './routes/dashboard/physical-profile'
+import { Route as DashboardProfileRouteImport } from './routes/dashboard/profile'
+import { Route as DashboardProgressRouteImport } from './routes/dashboard/progress'
+import { Route as DashboardRecommendationsRouteImport } from './routes/dashboard/recommendations'
 import { Route as AdminClientsClientIdRouteImport } from './routes/admin/clients.$clientId'
 
-const SignupRoute = SignupRouteImport.update({
-  id: '/signup',
-  path: '/signup',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ResetPasswordRoute = ResetPasswordRouteImport.update({
-  id: '/reset-password',
-  path: '/reset-password',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
-  id: '/forgot-password',
-  path: '/forgot-password',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DashboardRouteRoute = DashboardRouteRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminRouteRoute = AdminRouteRouteImport.update({
@@ -58,35 +38,59 @@ const AdminRouteRoute = AdminRouteRouteImport.update({
   path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const DashboardRouteRoute = DashboardRouteRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DashboardIndexRoute = DashboardIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => DashboardRouteRoute,
+const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
+  id: '/forgot-password',
+  path: '/forgot-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SignupRoute = SignupRouteImport.update({
+  id: '/signup',
+  path: '/signup',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AdminRouteRoute,
 } as any)
-const DashboardRecommendationsRoute =
-  DashboardRecommendationsRouteImport.update({
-    id: '/recommendations',
-    path: '/recommendations',
-    getParentRoute: () => DashboardRouteRoute,
-  } as any)
-const DashboardProgressRoute = DashboardProgressRouteImport.update({
-  id: '/progress',
-  path: '/progress',
+const AdminClientsRoute = AdminClientsRouteImport.update({
+  id: '/clients',
+  path: '/clients',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminRecommendationsRoute = AdminRecommendationsRouteImport.update({
+  id: '/recommendations',
+  path: '/recommendations',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const DashboardIndexRoute = DashboardIndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => DashboardRouteRoute,
 } as any)
-const DashboardProfileRoute = DashboardProfileRouteImport.update({
-  id: '/profile',
-  path: '/profile',
+const DashboardContactRoute = DashboardContactRouteImport.update({
+  id: '/contact',
+  path: '/contact',
+  getParentRoute: () => DashboardRouteRoute,
+} as any)
+const DashboardMeasurementsRoute = DashboardMeasurementsRouteImport.update({
+  id: '/measurements',
+  path: '/measurements',
   getParentRoute: () => DashboardRouteRoute,
 } as any)
 const DashboardPhysicalProfileRoute =
@@ -95,26 +99,22 @@ const DashboardPhysicalProfileRoute =
     path: '/physical-profile',
     getParentRoute: () => DashboardRouteRoute,
   } as any)
-const DashboardMeasurementsRoute = DashboardMeasurementsRouteImport.update({
-  id: '/measurements',
-  path: '/measurements',
+const DashboardProfileRoute = DashboardProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
   getParentRoute: () => DashboardRouteRoute,
 } as any)
-const DashboardContactRoute = DashboardContactRouteImport.update({
-  id: '/contact',
-  path: '/contact',
+const DashboardProgressRoute = DashboardProgressRouteImport.update({
+  id: '/progress',
+  path: '/progress',
   getParentRoute: () => DashboardRouteRoute,
 } as any)
-const AdminRecommendationsRoute = AdminRecommendationsRouteImport.update({
-  id: '/recommendations',
-  path: '/recommendations',
-  getParentRoute: () => AdminRouteRoute,
-} as any)
-const AdminClientsRoute = AdminClientsRouteImport.update({
-  id: '/clients',
-  path: '/clients',
-  getParentRoute: () => AdminRouteRoute,
-} as any)
+const DashboardRecommendationsRoute =
+  DashboardRecommendationsRouteImport.update({
+    id: '/recommendations',
+    path: '/recommendations',
+    getParentRoute: () => DashboardRouteRoute,
+  } as any)
 const AdminClientsClientIdRoute = AdminClientsClientIdRouteImport.update({
   id: '/$clientId',
   path: '/$clientId',
@@ -253,39 +253,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/signup': {
-      id: '/signup'
-      path: '/signup'
-      fullPath: '/signup'
-      preLoaderRoute: typeof SignupRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/reset-password': {
-      id: '/reset-password'
-      path: '/reset-password'
-      fullPath: '/reset-password'
-      preLoaderRoute: typeof ResetPasswordRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/forgot-password': {
-      id: '/forgot-password'
-      path: '/forgot-password'
-      fullPath: '/forgot-password'
-      preLoaderRoute: typeof ForgotPasswordRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/dashboard': {
-      id: '/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof DashboardRouteRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin': {
@@ -295,19 +267,40 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/dashboard/': {
-      id: '/dashboard/'
-      path: '/'
-      fullPath: '/dashboard/'
-      preLoaderRoute: typeof DashboardIndexRouteImport
-      parentRoute: typeof DashboardRouteRoute
+    '/forgot-password': {
+      id: '/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/forgot-password'
+      preLoaderRoute: typeof ForgotPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/signup': {
+      id: '/signup'
+      path: '/signup'
+      fullPath: '/signup'
+      preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/admin/': {
       id: '/admin/'
@@ -316,39 +309,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof AdminRouteRoute
     }
-    '/dashboard/recommendations': {
-      id: '/dashboard/recommendations'
+    '/admin/clients': {
+      id: '/admin/clients'
+      path: '/clients'
+      fullPath: '/admin/clients'
+      preLoaderRoute: typeof AdminClientsRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/recommendations': {
+      id: '/admin/recommendations'
       path: '/recommendations'
-      fullPath: '/dashboard/recommendations'
-      preLoaderRoute: typeof DashboardRecommendationsRouteImport
-      parentRoute: typeof DashboardRouteRoute
+      fullPath: '/admin/recommendations'
+      preLoaderRoute: typeof AdminRecommendationsRouteImport
+      parentRoute: typeof AdminRouteRoute
     }
-    '/dashboard/progress': {
-      id: '/dashboard/progress'
-      path: '/progress'
-      fullPath: '/dashboard/progress'
-      preLoaderRoute: typeof DashboardProgressRouteImport
-      parentRoute: typeof DashboardRouteRoute
-    }
-    '/dashboard/profile': {
-      id: '/dashboard/profile'
-      path: '/profile'
-      fullPath: '/dashboard/profile'
-      preLoaderRoute: typeof DashboardProfileRouteImport
-      parentRoute: typeof DashboardRouteRoute
-    }
-    '/dashboard/physical-profile': {
-      id: '/dashboard/physical-profile'
-      path: '/physical-profile'
-      fullPath: '/dashboard/physical-profile'
-      preLoaderRoute: typeof DashboardPhysicalProfileRouteImport
-      parentRoute: typeof DashboardRouteRoute
-    }
-    '/dashboard/measurements': {
-      id: '/dashboard/measurements'
-      path: '/measurements'
-      fullPath: '/dashboard/measurements'
-      preLoaderRoute: typeof DashboardMeasurementsRouteImport
+    '/dashboard/': {
+      id: '/dashboard/'
+      path: '/'
+      fullPath: '/dashboard/'
+      preLoaderRoute: typeof DashboardIndexRouteImport
       parentRoute: typeof DashboardRouteRoute
     }
     '/dashboard/contact': {
@@ -358,19 +337,40 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardContactRouteImport
       parentRoute: typeof DashboardRouteRoute
     }
-    '/admin/recommendations': {
-      id: '/admin/recommendations'
-      path: '/recommendations'
-      fullPath: '/admin/recommendations'
-      preLoaderRoute: typeof AdminRecommendationsRouteImport
-      parentRoute: typeof AdminRouteRoute
+    '/dashboard/measurements': {
+      id: '/dashboard/measurements'
+      path: '/measurements'
+      fullPath: '/dashboard/measurements'
+      preLoaderRoute: typeof DashboardMeasurementsRouteImport
+      parentRoute: typeof DashboardRouteRoute
     }
-    '/admin/clients': {
-      id: '/admin/clients'
-      path: '/clients'
-      fullPath: '/admin/clients'
-      preLoaderRoute: typeof AdminClientsRouteImport
-      parentRoute: typeof AdminRouteRoute
+    '/dashboard/physical-profile': {
+      id: '/dashboard/physical-profile'
+      path: '/physical-profile'
+      fullPath: '/dashboard/physical-profile'
+      preLoaderRoute: typeof DashboardPhysicalProfileRouteImport
+      parentRoute: typeof DashboardRouteRoute
+    }
+    '/dashboard/profile': {
+      id: '/dashboard/profile'
+      path: '/profile'
+      fullPath: '/dashboard/profile'
+      preLoaderRoute: typeof DashboardProfileRouteImport
+      parentRoute: typeof DashboardRouteRoute
+    }
+    '/dashboard/progress': {
+      id: '/dashboard/progress'
+      path: '/progress'
+      fullPath: '/dashboard/progress'
+      preLoaderRoute: typeof DashboardProgressRouteImport
+      parentRoute: typeof DashboardRouteRoute
+    }
+    '/dashboard/recommendations': {
+      id: '/dashboard/recommendations'
+      path: '/recommendations'
+      fullPath: '/dashboard/recommendations'
+      preLoaderRoute: typeof DashboardRecommendationsRouteImport
+      parentRoute: typeof DashboardRouteRoute
     }
     '/admin/clients/$clientId': {
       id: '/admin/clients/$clientId'
