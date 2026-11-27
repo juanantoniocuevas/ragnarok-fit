@@ -8,11 +8,13 @@ interface AuthCtx {
   user: User | null;
   session: Session | null;
   role: Role;
+  /** Cuenta maestra: gestiona preparadores y todos los clientes. */
+  isOwner: boolean;
   loading: boolean;
   signOut: () => Promise<void>;
 }
 
-const Ctx = createContext<AuthCtx>({ user: null, session: null, role: null, loading: true, signOut: async () => {} });
+const Ctx = createContext<AuthCtx>({ user: null, session: null, role: null, isOwner: false, loading: true, signOut: async () => {} });
 
 function clearSupabaseStorage() {
   if (typeof window === "undefined") return;
@@ -32,6 +34,7 @@ function clearSupabaseStorage() {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [role, setRole] = useState<Role>(null);
+  const [isOwner, setIsOwner] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -48,8 +51,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           console.error("Error loading user role:", error);
           return null;
         }
-        const roles = (data ?? []).map((entry: any) => entry.role as Role);
-        if (roles.includes("trainer")) return "trainer";
+        const roles = (data ?? []).map((entry: any) => entry.role as string);
+        if (isMounted) setIsOwner(roles.includes("owner"));
+        // El dueño entra al panel de administración igual que un preparador.
+        if (roles.includes("trainer") || roles.includes("owner")) return "trainer";
         if (roles.includes("client")) return "client";
         return null;
       } catch (error) {
@@ -73,6 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } else {
           setSession(null);
           setRole(null);
+          setIsOwner(false);
         }
       } catch (error) {
         console.error("Error setting up auth:", error);
@@ -97,6 +103,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       } else {
         setRole(null);
+        setIsOwner(false);
         setLoading(false);
       }
     });
@@ -112,10 +119,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     clearSupabaseStorage();
     setSession(null);
     setRole(null);
+    setIsOwner(false);
     setLoading(false);
   };
 
-  return <Ctx.Provider value={{ user: session?.user ?? null, session, role, loading, signOut }}>{children}</Ctx.Provider>;
+  return <Ctx.Provider value={{ user: session?.user ?? null, session, role, isOwner, loading, signOut }}>{children}</Ctx.Provider>;
 }
 
 export const useAuth = () => useContext(Ctx);

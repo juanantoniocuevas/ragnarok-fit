@@ -4,17 +4,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { Logo } from "@/components/Logo";
 import { toast } from "sonner";
+import { CLIENT_LOGIN_DOMAIN, normalizeUsername } from "@/lib/client-login";
 
 export const Route = createFileRoute("/login")({
   ssr: false,
   component: LoginPage,
 });
-
-const CLIENT_LOGIN_DOMAIN = "clientes.ragnarokfit.local";
-
-function normalizeUsername(value: string): string {
-  return value.trim().toLowerCase().replace(/\s+/g, "").replace(/[^a-z0-9._-]/g, "");
-}
 
 function toAuthEmail(identifier: string): string {
   const value = identifier.trim();
@@ -86,10 +81,7 @@ function LoginPage() {
             </button>
           </form>
           <p className="mt-6 text-center text-sm text-muted-foreground">
-            ¿No tienes cuenta?{" "}
-            <Link to="/signup" className="font-medium text-gold hover:underline">
-              Crear cuenta
-            </Link>
+            ¿No tienes cuenta? Pídele a tu preparador que te cree una.
           </p>
         </div>
         <div className="mt-4 text-center">

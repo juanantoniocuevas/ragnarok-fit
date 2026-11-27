@@ -30,8 +30,7 @@ function Landing() {
           <Logo className="h-16 w-auto md:h-20" />
           <nav className="flex items-center gap-3">
             <ThemeToggle />
-            <Link to="/login" className="btn-secondary text-sm">Ingresar</Link>
-            <Link to="/signup" className="btn-primary text-sm">Crear cuenta</Link>
+            <Link to="/login" className="btn-primary text-sm">Ingresar</Link>
           </nav>
         </div>
       </header>
